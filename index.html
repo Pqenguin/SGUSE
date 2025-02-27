@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: "微軟正黑體", Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .items-control {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .control-btn {
+            padding: 8px 16px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+        .control-btn:hover {
+            background-color: #3367d6;
+        }
+        .control-btn.remove {
+            background-color: #ea4335;
+        }
+        .control-btn.remove:hover {
+            background-color: #d32f2f;
+        }
+        .items-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .item-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 4px solid #4285f4;
+        }
+        .selection-container {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex-grow: 1;
+        }
+        .dropdown-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            width: 120px;
+        }
+        .dropdown-btn {
+            padding: 12px 18px;
+            background-color: white;
+            border: 1px solid #e0e4e8;
+            border-radius: 8px;
+            cursor: pointer;
+            min-width: 120px;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .dropdown-btn:hover {
+            border-color: #4285f4;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 120px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            z-index: 1;
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 5px;
+            width: 100%;
+        }
+        .search-box {
+            padding: 10px;
+            position: sticky;
+            top: 0;
+            background-color: white;
+            border-bottom: 1px solid #e0e4e8;
+            z-index: 2;
+        }
+        .search-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e0e4e8;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .dropdown-content div.option {
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .dropdown-content div.option:hover {
+            background-color: #f0f5ff;
+        }
+        .dropdown-content div.selected {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+        }
+        .confirm-btn {
+            padding: 12px 24px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+            margin-top: 20px;
+            align-self: flex-start;
+        }
+        .confirm-btn:hover {
+            background-color: #3367d6;
+        }
+        .result-display {
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            min-height: 120px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            font-size: 16px;
+            line-height: 1.6;
+            border-left: 4px solid #4285f4;
+        }
+        .result-item {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e0e4e8;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .result-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #1a73e8;
+            font-size: 18px;
+        }
+        .result-description {
+            color: #5f6368;
+        }
+        .no-results {
+            padding: 12px 18px;
+            color: #5f6368;
+            font-style: italic;
+        }
+        .label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #5f6368;
+            min-width: 70px;
+        }
+        .summary-header {
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #202124;
+            border-bottom: 2px solid #4285f4;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="items-control">
+            <button class="control-btn add" id="add-item">增加道具</button>
+            <button class="control-btn remove" id="remove-item">減少道具</button>
+        </div>
+        
+        <div class="items-container" id="items-container">
+            <!-- 初始道具選擇行 - 會通過JS動態產生 -->
+        </div>
+
+        <button class="confirm-btn" id="confirm-btn">確認發放</button>
+
+        <div class="result-display" id="result-display">
+            <div class="summary-header">發放道具清單</div>
+            <!-- 結果將通過JS動態添加 -->
+        </div>
+    </div>
+
+    <script>
+        // 各種組合對應的內容
+        const contentMapping = {
+            "1_10000_1000000": {
+                title: "神奇糖果禮盒",
+                description: "包含10個神奇糖果，可以暫時提高角色能力值，持續30分鐘。特別適合初學者使用。"
+            },
+            "1_24680_7654321": {
+                title: "初級法術卷軸套裝",
+                description: "5個入門級法術卷軸，包括治療、防護、火球、隱形和輕盈術。適合新手法師。"
+            },
+            "2_10000_1000000": {
+                title: "高級魔法杖",
+                description: "以銀木製成的魔法杖，鑲嵌藍寶石，可增強水系法術威力，減少25%魔法消耗。"
+            },
+            "2_24680_7654321": {
+                title: "稀有防具套裝",
+                description: "龍皮製成的全套防具，提供極佳的魔法和物理防禦，並附帶火焰抗性效果。"
+            },
+            "3_10000_1000000": {
+                title: "傳說中的寶劍",
+                description: "傳說中屬於古代英雄的劍，擁有淨化效果，對不死生物造成三倍傷害。"
+            },
+            "3_24680_7654321": {
+                title: "龍之心寶石",
+                description: "從遠古巨龍心臟中提煉出的紅色寶石，佩戴後可獲得龍語理解能力和火焰免疫。"
+            },
+            "4_10000_1000000": {
+                title: "時間扭曲器",
+                description: "神秘的古老裝置，可以短暫減緩周圍時間流動，讓使用者獲得5秒的額外行動時間。"
+            },
+            "4_24680_7654321": {
+                title: "永恆之冠",
+                description: "據說由時間之神親手打造的王冠，佩戴者不受衰老影響，每天可使用一次時間倒流能力。"
+            },
+            "5_10000_1000000": {
+                title: "元素精靈召喚卡",
+                description: "一套五張卡片，每張可召喚不同元素的精靈為使用者服務，持續時間為一小時。"
+            },
+            "5_24680_7654321": {
+                title: "宇宙能量核心",
+                description: "來自遙遠星系的能量結晶，可為任何魔法裝置提供無盡能源，永不耗盡。"
+            }
+        };
+
+        // 用於儲存道具選擇行的ID計數器
+        let itemRowCounter = 0;
+
+        // 創建道具選擇行
+        function createItemRow() {
+            const rowId = itemRowCounter++;
+            const itemRow = document.createElement('div');
+            itemRow.className = 'item-row';
+            itemRow.id = `item-row-${rowId}`;
+            
+            const selectionContainer = document.createElement('div');
+            selectionContainer.className = 'selection-container';
+            
+            // 類型選擇
+            const typeDropdownRow = createDropdownRow('物品類型', `type-${rowId}`, 1, 5, '3');
+            selectionContainer.appendChild(typeDropdownRow);
+            
+            // 物品ID選擇
+            const param1DropdownRow = createDropdownRow('物品ID', `param1-${rowId}`, 1, 60036, '24680');
+            selectionContainer.appendChild(param1DropdownRow);
+            
+            // 數量選擇
+            const param2DropdownRow = createDropdownRow('數量', `param2-${rowId}`, 1, 99999999, '1');
+            selectionContainer.appendChild(param2DropdownRow);
+            
+            // 移除按鈕
+            const removeButton = document.createElement('button');
+            removeButton.className = 'control-btn remove';
+            removeButton.innerHTML = '移除';
+            removeButton.addEventListener('click', () => removeItemRow(rowId));
+            
+            itemRow.appendChild(selectionContainer);
+            itemRow.appendChild(removeButton);
+            
+            return itemRow;
+        }
+
+        // 創建下拉選單行
+        function createDropdownRow(labelText, id, min, max, defaultValue) {
+            const dropdownRow = document.createElement('div');
+            dropdownRow.className = 'dropdown-row';
+            
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.innerText = labelText;
+            dropdownRow.appendChild(label);
+            
+            const dropdown = document.createElement('div');
+            dropdown.className = 'dropdown';
+            dropdown.id = `${id}-dropdown`;
+            
+            const button = document.createElement('button');
+            button.className = 'dropdown-btn';
+            button.innerHTML = `<span id="${id}-selected" data-value="${defaultValue}">${defaultValue}</span><span>▼</span>`;
+            button.addEventListener('click', () => toggleDropdown(id));
+            dropdown.appendChild(button);
+            
+            const content = document.createElement('div');
+            content.className = 'dropdown-content';
+            content.id = `${id}-options`;
+            
+            const searchBox = document.createElement('div');
+            searchBox.className = 'search-box';
+            
+            const searchInput = document.createElement('input');
+            searchInput.type = 'number';
+            searchInput.className = 'search-input';
+            searchInput.placeholder = '搜尋或輸入數字...';
+            searchInput.min = min;
+            searchInput.max = max;
+            searchInput.id = `${id}-search`;
+            searchInput.addEventListener('input', function() {
+                filterOptions(id, this.value);
+                validateInput(this, min, max);
+            });
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const value = this.value;
+                    if (value && !isNaN(parseInt(value)) && parseInt(value) >= min && parseInt(value) <= max) {
+                        selectOption(id, value, value);
+                    }
+                }
+            });
+            
+            searchBox.appendChild(searchInput);
+            content.appendChild(searchBox);
+            
+            // 添加預設選項
+            if (id.startsWith('type')) {
+                for (let i = 1; i <= 5; i++) {
+                    addOption(content, id, i.toString(), i.toString(), i.toString() === defaultValue);
+                }
+            } else if (id.startsWith('param1')) {
+                const options = ['10000', '24680', '42000', '50000', '60036'];
+                options.forEach(opt => {
+                    addOption(content, id, opt, opt, opt === defaultValue);
+                });
+            } else if (id.startsWith('param2')) {
+                const options = ['1', '5', '10', '50', '100', '1000', '10000'];
+                options.forEach(opt => {
+                    addOption(content, id, opt, opt, opt === defaultValue);
+                });
+            }
+            
+            dropdown.appendChild(content);
+            dropdownRow.appendChild(dropdown);
+            
+            return dropdownRow;
+        }
+
+        // 添加選項
+        function addOption(container, dropdownId, value, text, isSelected) {
+            const option = document.createElement('div');
+            option.className = 'option';
+            if (isSelected) option.classList.add('selected');
+            option.setAttribute('data-value', value);
+            option.innerText = text;
+            option.addEventListener('click', () => selectOption(dropdownId, value, text));
+            container.appendChild(option);
+        }
+
+        // 切換下拉菜單顯示
+        function toggleDropdown(dropdownId) {
+            const content = document.getElementById(`${dropdownId}-options`);
+            const allDropdowns = document.querySelectorAll('.dropdown-content');
+            
+            allDropdowns.forEach(dropdown => {
+                if (dropdown.id !== `${dropdownId}-options` && dropdown.style.display === "block") {
+                    dropdown.style.display = "none";
+                }
+            });
+            
+            content.style.display = content.style.display === "block" ? "none" : "block";
+            
+            // 當打開下拉菜單時，將焦點放在搜索框上
+            if (content.style.display === "block") {
+                const searchInput = document.getElementById(`${dropdownId}-search`);
+                if (searchInput) {
+                    setTimeout(() => searchInput.focus(), 0);
+                }
+            }
+        }
+
+        // 選擇選項
+        function selectOption(dropdownId, value, text) {
+            const selected = document.getElementById(`${dropdownId}-selected`);
+            selected.innerText = text;
+            selected.setAttribute("data-value", value);
+            
+            const options = document.querySelectorAll(`#${dropdownId}-options .option`);
+            options.forEach(option => {
+                if (option.getAttribute("data-value") === value) {
+                    option.classList.add("selected");
+                } else {
+                    option.classList.remove("selected");
+                }
+            });
+            
+            document.getElementById(`${dropdownId}-options`).style.display = "none";
+            
+            // 更新顯示結果
+            displayResult();
+        }
+
+        // 過濾選項
+        function filterOptions(dropdownId, searchValue) {
+            const options = document.querySelectorAll(`#${dropdownId}-options .option`);
+            let hasResults = false;
+            
+            options.forEach(option => {
+                const value = option.getAttribute("data-value");
+                const match = value.includes(searchValue);
+                option.style.display = match ? "block" : "none";
+                if (match) hasResults = true;
+            });
+            
+            // 如果沒有匹配的選項且搜索值在有效範圍內，添加自定義選項
+            const noResultsEl = document.getElementById(`${dropdownId}-no-results`);
+            if (noResultsEl) noResultsEl.remove();
+            
+            if (!hasResults && searchValue) {
+                let isValid = true;
+                const searchNum = parseInt(searchValue);
+                
+                if (dropdownId.startsWith('type')) {
+                    isValid = !isNaN(searchNum) && searchNum >= 1 && searchNum <= 5;
+                } else if (dropdownId.startsWith('param1')) {
+                    isValid = !isNaN(searchNum) && searchNum >= 1 && searchNum <= 60036;
+                } else if (dropdownId.startsWith('param2')) {
+                    isValid = !isNaN(searchNum) && searchNum >= 1 && searchNum <= 99999999;
+                }
+                
+                if (isValid) {
+                    // 如果輸入的值有效但不在選項中，創建一個臨時選項
+                    const noResults = document.createElement("div");
+                    noResults.id = `${dropdownId}-no-results`;
+                    noResults.className = "option";
+                    noResults.setAttribute("data-value", searchValue);
+                    noResults.innerText = searchValue;
+                    noResults.addEventListener('click', () => selectOption(dropdownId, searchValue, searchValue));
+                    
+                    // 添加到下拉菜單
+                    const searchBox = document.querySelector(`#${dropdownId}-options .search-box`);
+                    searchBox.insertAdjacentElement('afterend', noResults);
+                } else {
+                    // 如果輸入的值無效，顯示提示
+                    const noResults = document.createElement("div");
+                    noResults.id = `${dropdownId}-no-results`;
+                    noResults.className = "no-results";
+                    noResults.innerText = "沒有找到符合的選項";
+                    
+                    // 添加到下拉菜單
+                    const searchBox = document.querySelector(`#${dropdownId}-options .search-box`);
+                    searchBox.insertAdjacentElement('afterend', noResults);
+                }
+            }
+        }
+
+        // 驗證並限制輸入範圍
+        function validateInput(input, min, max) {
+            const value = parseInt(input.value);
+            if (!isNaN(value)) {
+                if (value < min) input.value = min;
+                if (value > max) input.value = max;
+            }
+        }
+
+        // 添加道具行
+        function addItemRow() {
+            const itemsContainer = document.getElementById('items-container');
+            const newRow = createItemRow();
+            itemsContainer.appendChild(newRow);
+            displayResult();
+        }
+
+        // 移除道具行
+        function removeItemRow(rowId) {
+            const row = document.getElementById(`item-row-${rowId}`);
+            if (row) {
+                row.remove();
+                displayResult();
+            }
+        }
+
+        // 顯示結果
+        function displayResult() {
+            const resultDisplay = document.getElementById("result-display");
+            resultDisplay.innerHTML = '<div class="summary-header">發放道具清單</div>';
+            
+            const itemRows = document.querySelectorAll('.item-row');
+            
+            if (itemRows.length === 0) {
+                resultDisplay.innerHTML += '<div class="result-item">沒有選擇任何道具</div>';
+                return;
+            }
+            
+            itemRows.forEach((row, index) => {
+                const rowId = row.id.split('-')[2];
+                const typeValue = document.getElementById(`type-${rowId}-selected`).getAttribute("data-value");
+                const param1Value = document.getElementById(`param1-${rowId}-selected`).getAttribute("data-value");
+                const param2Value = document.getElementById(`param2-${rowId}-selected`).getAttribute("data-value");
+                
+                // 將param2作為數量使用
+                const quantity = parseInt(param2Value);
+                
+                // 嘗試兩種可能的鍵以查找物品
+                let key1 = `${typeValue}_${param1Value}_1000000`;
+                let key2 = `${typeValue}_${param1Value}_7654321`;
+                
+                let resultHTML = '<div class="result-item">';
+                
+                if (contentMapping[key1]) {
+                    const content = contentMapping[key1];
+                    resultHTML += `
+                        <div class="result-title">${index + 1}. ${content.title} × ${quantity}</div>
+                        <div class="result-description">${content.description}</div>
+                    `;
+                } else if (contentMapping[key2]) {
+                    const content = contentMapping[key2];
+                    resultHTML += `
+                        <div class="result-title">${index + 1}. ${content.title} × ${quantity}</div>
+                        <div class="result-description">${content.description}</div>
+                    `;
+                } else {
+                    resultHTML += `
+                        <div class="result-title">${index + 1}. 自定義物品 × ${quantity}</div>
+                        <div class="result-description">您選擇的組合 (${typeValue}, ${param1Value}) 可以創建自定義物品。請聯繫管理員添加物品描述。</div>
+                    `;
+                }
+                
+                resultHTML += '</div>';
+                resultDisplay.innerHTML += resultHTML;
+            });
+        }
+
+        // 初始設置
+        document.getElementById('add-item').addEventListener('click', addItemRow);
+        
+        document.getElementById('remove-item').addEventListener('click', function() {
+            const itemRows = document.querySelectorAll('.item-row');
+            if (itemRows.length > 0) {
+                itemRows[itemRows.length - 1].remove();
+                displayResult();
+            }
+        });
+        
+        document.getElementById('confirm-btn').addEventListener('click', function() {
+            alert('已確認發放所選道具！');
+        });
+        
+        // 點擊外部關閉下拉菜單
+        window.addEventListener('click', (event) => {
+            if (!event.target.matches('.dropdown-btn') && 
+                !event.target.matches('.dropdown-btn *') &&
+                !event.target.matches('.dropdown-content *')) {
+                document.querySelectorAll('.dropdown-content').forEach(dropdown => {
+                    dropdown.style.display = "none";
+                });
+            }
+        });
+        
+        // 初始化添加一個道具行
+        addItemRow();
+    </script>
+</body>
+</html>
